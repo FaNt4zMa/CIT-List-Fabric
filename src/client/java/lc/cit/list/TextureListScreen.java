@@ -1,6 +1,7 @@
 package lc.cit.list;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
@@ -27,7 +28,7 @@ public class TextureListScreen extends Screen {
         BundleWrapper bundle = CitScanner.getAllCustomNameCITs();
         this.mappings = bundle.formatedStringLines;
         this.itemlist = bundle.itemNames;
-        this.conditionList =bundle.toRenameTrigger;
+        this.conditionList = bundle.toRenameTrigger;
     }
 
     @Override
@@ -39,16 +40,15 @@ public class TextureListScreen extends Screen {
         int top = 20;
         int bottom = top + itemHeight;
 
-        this.list = new MappingsListWidget(this.client, this.width - 10, this.height - 50, top, bottom, itemHeight);
+        this.list = new MappingsListWidget(this.client, this.width - 10, this.height - 50, top, bottom);
 
-        
         for (int i = 0; i < mappings.size(); i++) {
             Identifier id = Identifier.of("minecraft", itemlist.get(i));
             Item item = Registries.ITEM.get(id);
             ItemStack stack = new ItemStack(item);
-            stack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(conditionList.get(i))); 
-            this.list.addMapping(Text.literal(mappings.get(i)),stack);
-            
+            stack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(conditionList.get(i)));
+            this.list.addMapping(Text.literal(mappings.get(i)), stack);
+
         }
 
         this.addSelectableChild(list);
@@ -69,19 +69,20 @@ public class TextureListScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (this.list.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+    public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+        if (this.list.mouseDragged(click, offsetX, offsetY)) {
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        return super.mouseDragged(click, offsetX, offsetY);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) {
+    public boolean mouseClicked(Click click, boolean doubled) {
+        // Click c = new Click(mouseX, mouseY, new MouseInput(button,0));
+        if (super.mouseClicked(click, doubled)) {
             return true; // ✅ buttons and other widgets get priority
         }
-        return this.list.mouseClicked(mouseX, mouseY, button); // ✅ fallback to list
+        return this.list.mouseClicked(click, doubled); // ✅ fallback to list
     }
 
     @Override
@@ -97,6 +98,7 @@ public class TextureListScreen extends Screen {
         int column2X = this.width / 3;
         int column3X = 2 * this.width / 3;
 
+        this.list.render(context, mouseX, mouseY, delta);
         // List Header
         context.fill(0, headerY - 2, this.width, headerY + this.textRenderer.fontHeight + 2, 0xFF333333); // dark
                                                                                                           // background
@@ -104,7 +106,6 @@ public class TextureListScreen extends Screen {
         context.drawText(this.textRenderer, "New Name", column2X, headerY, 0xFFFFFFFF, true);
         context.drawText(this.textRenderer, "Resourcepack", column3X, headerY, 0xFFFFFFFF, true);
 
-        this.list.render(context, mouseX, mouseY, delta);
 
         context.fill(0, this.height - 30, this.width, this.height - 30 + 3, 0xFFAAAAAA); // light gray line
         // Everything Else
@@ -125,13 +126,13 @@ public class TextureListScreen extends Screen {
     // Scrollable list widget
     // ---------------------------------------------------------------
     private static class MappingsListWidget extends AlwaysSelectedEntryListWidget<MappingsListWidget.TextEntry> {
-        public MappingsListWidget(MinecraftClient client, int width, int height, int top, int bottom, int itemHeight) {
-            super(client, width, height, top, bottom, itemHeight);
+        public MappingsListWidget(MinecraftClient client, int width, int height, int top, int bottom) {
+            super(client, width, height, top, bottom);
 
         }
 
-        public void addMapping(Text text,ItemStack stack) {
-            this.addEntry(new TextEntry(text,stack));
+        public void addMapping(Text text, ItemStack stack) {
+            this.addEntry(new TextEntry(text, stack));
         }
 
         @Override
@@ -149,24 +150,17 @@ public class TextureListScreen extends Screen {
             }
 
             @Override
-            public void render(
-                    DrawContext context,
-                    int index, int y, int x,
-                    int entryWidth, int entryHeight,
-                    int mouseX, int mouseY,
-                    boolean hovered, float tickDelta) {
-
+            public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
                 MinecraftClient mc = MinecraftClient.getInstance();
                 int color = hovered ? 0xFFFFFFA0 : 0xFFFFFFFF;
-                int textY = y + (entryHeight - mc.textRenderer.fontHeight) / 2;
+                int entryHeight = getContentHeight();
+                int entryWidth = getContentWidth();
+                int textY = getY() + (entryHeight - mc.textRenderer.fontHeight) / 2;
 
+                int iconX = getX() + 4;
+                int iconY = getY() + (entryHeight - 16) / 2;
 
-int iconX = x + 4;
-int iconY = y + (entryHeight - 16) / 2;
-
-
-context.drawItem(stack, iconX, iconY);
-
+                context.drawItem(stack, iconX, iconY);
 
                 // ✅ Ensure text width fits in visible area
                 String visible = mc.textRenderer.trimToWidth(text.getString(), entryWidth - 10);
