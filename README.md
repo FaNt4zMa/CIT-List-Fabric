@@ -1,4 +1,4 @@
-Minecraft version: 1.21.7
+Main contains dev code, Please choose branch that fits your minecraft version
 
 ## Information
 
