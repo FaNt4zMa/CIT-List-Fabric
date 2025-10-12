@@ -5,11 +5,11 @@
 	"name": "CIT List",
 	"description": "This mod list all CIT (Custom item textures) that are enabled. (only works for vanilla style CIT)",
 	"authors": [
-		"Me!"
+		"LostIntelligence"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "",
+		"sources": "https://github.com/LostIntelligence/CIT-List-Fabric"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/cit-list/icon.png",
@@ -19,7 +19,7 @@
 			"lc.cit.list.CITListClient"
 		],
 		"modmenu": [
-      "lc.cit.list.TextureListModMenu"
+      "lc.cit.list.ListIntegrationModMenuApi"
     ]
 	},
 	"depends": {

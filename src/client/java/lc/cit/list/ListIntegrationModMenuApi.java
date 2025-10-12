@@ -1,7 +1,7 @@
 package lc.cit.list;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-public class TextureListModMenu implements ModMenuApi {
+public class ListIntegrationModMenuApi implements ModMenuApi {
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
