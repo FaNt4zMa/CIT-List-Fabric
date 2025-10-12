@@ -18,34 +18,35 @@ public class CitScanner {
      * Scans all resource packs for CIT definitions depending on renamed items.
      * Returns entries in format: ItemName_NameToTriggerCIT_ResourcePack
      */
-    public static List<String> getAllCustomNameCITs() {
+    public static BundleWrapper getAllCustomNameCITs() {
         List<String> result = new ArrayList<>();
+        List<String> resultItem = new ArrayList<>();
         ResourceManager rm = MinecraftClient.getInstance().getResourceManager();
+        List<String> nameList = new ArrayList<>();
+        List<String> conditionList = new ArrayList<>();
+        List<String> packList = new ArrayList<>();
 
-        try {rm.findResources("items", id -> true).forEach((id, res) -> System.out.println(id.toString()));
-
+        try {
+            // rm.findResources("items", id -> true).forEach((id, res) ->
+            // System.out.println(id.toString()));
             // Get all model JSONs
-            Map<Identifier, Resource> resources =
-                   rm.findResources("items", id -> id.getPath().endsWith(".json"));
-            System.out.println(resources.size());
-            System.out.println("A");
+            Map<Identifier, Resource> resources = rm.findResources("items", id -> id.getPath().endsWith(".json"));
             for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
                 Identifier id = entry.getKey();
-                System.out.println("B");
                 Resource res = entry.getValue();
-                System.out.println("C");
 
-                try (InputStreamReader reader =
-                             new InputStreamReader(res.getInputStream(), StandardCharsets.UTF_8)) {
+                try (InputStreamReader reader = new InputStreamReader(res.getInputStream(), StandardCharsets.UTF_8)) {
 
                     JsonObject root = GSON.fromJson(reader, JsonObject.class);
-                    if (root == null) continue;
+                    if (root == null)
+                        continue;
 
                     // Recursively search for any object with "type": "minecraft:select"
                     List<JsonObject> selectBlocks = findSelectBlocks(root);
 
                     for (JsonObject model : selectBlocks) {
-                        if (!model.has("property") || !model.has("component")) continue;
+                        if (!model.has("property") || !model.has("component"))
+                            continue;
 
                         String property = model.get("property").getAsString();
                         String component = model.get("component").getAsString();
@@ -58,20 +59,26 @@ public class CitScanner {
                         if (model.has("cases") && model.get("cases").isJsonArray()) {
                             JsonArray cases = model.getAsJsonArray("cases");
 
-                            // Extract item name cleanly (strip models/item/ prefix)
                             String itemName = id.getPath()
-                                    .replace("models/item/", "")
+                                    .replace("items/", "")
                                     .replace(".json", "");
 
                             String packName = res.getPack().getInfo().title().toString();
+                            packName = packName.replace("literal{", "").replace("}", "");
 
                             for (JsonElement el : cases) {
-                                if (!el.isJsonObject()) continue;
+                                if (!el.isJsonObject())
+                                    continue;
                                 JsonObject caseObj = el.getAsJsonObject();
 
                                 if (caseObj.has("when")) {
                                     String when = caseObj.get("when").getAsString();
-                                    result.add(itemName.replace("items/", "") + " - " + when + " - " + packName.replace("literal{", "").replace("}", ""));
+                                    nameList.add(itemName);
+                                    conditionList.add(when);
+                                    packList.add(packName);
+                                    String ite = id.getPath().replace(".json", "");
+                                    ite = ite.replaceFirst(".*/", "");
+                                    resultItem.add(ite);
                                 }
                             }
                         }
@@ -81,19 +88,32 @@ public class CitScanner {
                     System.err.println("[CIT Scanner] Error parsing " + id + ": " + e.getMessage());
                 }
             }
+            if (nameList.size() > 0) {
+                int itemNameLenght = Collections.max(nameList, Comparator.comparing(String::length)).length();
+                int conditionListLenght = Collections.max(conditionList, Comparator.comparing(String::length)).length();
+                int packListLenght = Collections.max(packList, Comparator.comparing(String::length)).length();
+                for (int i = 0; i < packList.size(); i++) {
+                 
+                        result.add(String.format("%-" + itemNameLenght + "s", nameList.get(i)) + " - "
+                                + String.format("%-" + conditionListLenght + "s", conditionList.get(i)) + " - "
+                                + String.format("%-" + packListLenght + "s", packList.get(i)));
+
+                   
+                }
+            }
 
         } catch (Exception e) {
-            System.out.println(e.toString());
             System.err.println("[CIT Scanner] Resource scan error: " + e.getMessage());
         }
-        System.out.println(result.getFirst());
-        return result;
+        System.out.println("[CIT Scanner] Scan Finished");
+        return new BundleWrapper(resultItem, result, conditionList);
     }
 
     /** Recursively finds all objects with "type": "minecraft:select". */
     private static List<JsonObject> findSelectBlocks(JsonElement element) {
         List<JsonObject> found = new ArrayList<>();
-        if (element == null || element.isJsonNull()) return found;
+        if (element == null || element.isJsonNull())
+            return found;
 
         if (element.isJsonObject()) {
             JsonObject obj = element.getAsJsonObject();
